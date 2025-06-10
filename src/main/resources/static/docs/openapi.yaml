@@ -1,0 +1,269 @@
+openapi: 3.0.3
+info:
+  title: Feed Standardization Service API
+  description: |
+    Microservice that standardizes sports betting feed messages from different providers.
+
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /provider-alpha/feed:
+    post:
+      tags:
+        - Provider Alpha
+      summary: Receive messages from Provider Alpha
+      description: |
+        Endpoint to receive messages from Provider Alpha in their proprietary format.
+        Supports both ODDS_CHANGE and BET_SETTLEMENT messages.
+      operationId: processProviderAlphaFeed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ProviderAlphaOddsChange'
+                - $ref: '#/components/schemas/ProviderAlphaBetSettlement'
+            examples:
+              odds_change:
+                summary: Odds update example
+                value:
+                  msg_type: "odds_update"
+                  event_id: "ev123"
+                  values:
+                    "1": 2.0
+                    "X": 3.1
+                    "2": 3.8
+              bet_settlement:
+                summary: Settlement example
+                value:
+                  msg_type: "settlement"
+                  event_id: "ev123"
+                  outcome: "1"
+      responses:
+        '200':
+          description: Message processed successfully
+
+        '400':
+          description: Invalid message format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /provider-beta/feed:
+    post:
+      tags:
+        - Provider Beta
+      summary: Receive messages from Provider Beta
+      description: |
+        Endpoint to receive messages from Provider Beta in their proprietary format.
+        Supports both ODDS_CHANGE and BET_SETTLEMENT messages.
+      operationId: processProviderBetaFeed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ProviderBetaOddsChange'
+                - $ref: '#/components/schemas/ProviderBetaBetSettlement'
+            examples:
+              odds_change:
+                summary: Odds update example
+                value:
+                  type: "ODDS"
+                  event_id: "ev456"
+                  odds:
+                    home: 1.95
+                    draw: 3.2
+                    away: 4.0
+              bet_settlement:
+                summary: Settlement example
+                value:
+                  type: "SETTLEMENT"
+                  event_id: "ev456"
+                  result: "away"
+      responses:
+        '200':
+          description: Message processed successfully
+
+        '400':
+          description: Invalid message format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ProviderAlphaOddsChange:
+      type: object
+      required:
+        - msg_type
+        - event_id
+        - values
+      properties:
+        msg_type:
+          type: string
+          enum: ["odds_update"]
+          description: Message type
+        event_id:
+          type: string
+          description: Unique event identifier
+          example: "ev123"
+        values:
+          type: object
+          required:
+            - "1"
+            - "X"
+            - "2"
+          properties:
+            "1":
+              type: number
+              format: double
+              minimum: 1.0
+              description: Odds for home team win
+              example: 2.0
+            "X":
+              type: number
+              format: double
+              minimum: 1.0
+              description: Odds for draw
+              example: 3.1
+            "2":
+              type: number
+              format: double
+              minimum: 1.0
+              description: Odds for away team win
+              example: 3.8
+
+    ProviderAlphaBetSettlement:
+      type: object
+      required:
+        - msg_type
+        - event_id
+        - outcome
+      properties:
+        msg_type:
+          type: string
+          enum: ["settlement"]
+          description: Message type
+        event_id:
+          type: string
+          description: Unique event identifier
+          example: "ev123"
+        outcome:
+          type: string
+          enum: ["1", "X", "2"]
+          description: Event outcome
+          example: "1"
+
+    ProviderBetaOddsChange:
+      type: object
+      required:
+        - type
+        - event_id
+        - odds
+      properties:
+        type:
+          type: string
+          enum: ["ODDS"]
+          description: Message type
+        event_id:
+          type: string
+          description: Unique event identifier
+          example: "ev456"
+        odds:
+          type: object
+          required:
+            - home
+            - draw
+            - away
+          properties:
+            home:
+              type: number
+              format: double
+              minimum: 1.0
+              description: Odds for home team win
+              example: 1.95
+            draw:
+              type: number
+              format: double
+              minimum: 1.0
+              description: Odds for draw
+              example: 3.2
+            away:
+              type: number
+              format: double
+              minimum: 1.0
+              description: Odds for away team win
+              example: 4.0
+
+    ProviderBetaBetSettlement:
+      type: object
+      required:
+        - type
+        - event_id
+        - result
+      properties:
+        type:
+          type: string
+          enum: ["SETTLEMENT"]
+          description: Message type
+        event_id:
+          type: string
+          description: Unique event identifier
+          example: "ev456"
+        result:
+          type: string
+          enum: ["home", "draw", "away"]
+          description: Event outcome
+          example: "away"
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - error
+        - timestamp
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+        status:
+          type: number
+          description: Response status
+          example: 400
+        error:
+          type: string
+          description: Error description
+          example: "Bad Request"
+        trace:
+          type: string
+          description: Additional error details
+
+
+
+tags:
+  - name: Provider Alpha
+    description: Endpoints for processing Provider Alpha messages
+  - name: Provider Beta
+    description: Endpoints for processing Provider Beta messages
