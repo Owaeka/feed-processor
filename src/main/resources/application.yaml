@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: feed-processor
+
+springdoc:
+  swagger-ui:
+    url: /docs/openapi.yaml
